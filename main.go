@@ -1,45 +1,53 @@
 package main
 
 import (
-"log"
-"fmt"
-"database/sql"
+	"database/sql"
+	"fmt"
+	"log"
+
 	_ "github.com/go-sql-driver/mysql"
-//  tm "github.com/buger/goterm"
-// "time"
+	//  tm "github.com/buger/goterm"
+	// "time"
 )
+
 func main() {
 
 	// getTime()
-	dbCon()
+
 	fmt.Println("Welcome to Reminder Cli")
 	fmt.Println("What do you want to do?")
 	fmt.Println("1.Add Reminder")
 	fmt.Println("2.Edit Reminder")
 	fmt.Println("3.Delete Reminder")
 	fmt.Println("4.View Reminder")
-    var input int
+	var input int
 	fmt.Scanln(&input)
-	switch input{
-	case 1 : addReminder()
-	case 2 : editReminder()
-	case 3 : deleteReminder()
-	case 4 :viewReminder()
+	switch input {
+	case 1:
+		addReminder()
+	case 2:
+		editReminder()
+	case 3:
+		deleteReminder()
+	case 4:
+		viewReminder()
 	default:
-	   fmt.Printf("Invalid Entry\n" );
- }
- 
-	
-    
+		fmt.Printf("Invalid Entry\n")
+	}
+
 }
-func dbCon(){
-	db, err := sql.Open("mysql",
-	"root:root@tcp(localhost:3306)/Reminder")
-    if err != nil {
-	log.Fatal(err)
-     }
-    defer db.Close()
- }
+func dbConn() (db *sql.DB) {
+	dbDriver := "mysql"
+	dbUser := "root"
+	dbPass := "root"
+	dbName := "Reminder"
+	db, err := sql.Open(dbDriver, dbUser+":"+dbPass+"@/"+dbName)
+	if err != nil {
+		panic(err.Error())
+	}
+	return db
+}
+
 // func getTime(){
 // 	// tm.Clear() // Clear current screen
 
@@ -55,7 +63,7 @@ func dbCon(){
 //         time.Sleep(time.Second)
 //     }
 // }
-func addReminder(){
+func addReminder() {
 	fmt.Println("What do you want to remind")
 	var rem string
 	fmt.Scanln(&rem)
@@ -64,12 +72,45 @@ func addReminder(){
 	fmt.Scanln(&dt)
 	fmt.Println("added")
 }
-func editReminder(){
+func editReminder() {
 	fmt.Print("edit")
 }
-func deleteReminder(){
+func deleteReminder() {
+	db := dbConn()
+	var id int
+	viewReminder()
+	fmt.Println("Enter the id of the reminder you want to delete")
+	fmt.Scan(&id)
+	delForm, err := db.Prepare("DELETE FROM Reminder_Table WHERE Reminder_Table_id=?")
+	if err != nil {
+		panic(err.Error())
+	}
+	delForm.Exec(id)
 	fmt.Print("delete")
 }
-func viewReminder(){
-	fmt.Print("view")
+func viewReminder() {
+	db := dbConn()
+	var (
+		id  int
+		rem string
+		dt  string
+	)
+	rows, err := db.Query("SELECT * FROM Reminder_Table")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer rows.Close()
+	for rows.Next() {
+		err := rows.Scan(&id, &rem, &dt)
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Println(id, rem, dt)
+
+		if err != nil {
+			panic(err.Error())
+		}
+		defer db.Close()
+	}
+
 }
